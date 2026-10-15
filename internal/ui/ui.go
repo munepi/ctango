@@ -107,9 +107,9 @@ func (o *IO) Confirm(question string) (bool, error) {
 	return false, nil
 }
 
-// Editor returns the editor command from $CTAN_EDITOR, $VISUAL or $EDITOR.
+// Editor returns the editor command from $CTANGO_EDITOR, $VISUAL or $EDITOR.
 func Editor() string {
-	for _, v := range []string{"CTAN_EDITOR", "VISUAL", "EDITOR"} {
+	for _, v := range []string{"CTANGO_EDITOR", "VISUAL", "EDITOR"} {
 		if e := os.Getenv(v); e != "" {
 			return e
 		}
@@ -123,7 +123,7 @@ func Editor() string {
 // Edit opens text in the user's editor and returns the result. Lines
 // starting with "#" are removed, as in git commit messages.
 func (o *IO) Edit(text string) (string, error) {
-	f, err := os.CreateTemp("", "ctan-*.txt")
+	f, err := os.CreateTemp("", "ctango-*.txt")
 	if err != nil {
 		return "", err
 	}

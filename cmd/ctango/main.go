@@ -1,4 +1,4 @@
-// Command ctan works with CTAN from the command line.
+// Command ctango works with CTAN from the command line.
 package main
 
 import (

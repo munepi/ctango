@@ -43,15 +43,15 @@ func (f *Factory) APIClient() *ctanapi.Client   { return ctanapi.NewClient(f.Use
 // NewRootCmd builds the command tree.
 func NewRootCmd(f *Factory) *cobra.Command {
 	root := &cobra.Command{
-		Use:   "ctan <command> [flags]",
+		Use:   "ctango <command> [flags]",
 		Short: "Work with CTAN from the command line",
 		Long: `Work with CTAN from the command line.
 
-Package metadata lives in ctan.toml (create it with "ctan init");
-"ctan upload" sends the archive and the metadata to CTAN.`,
-		Example: `  $ ctan init
-  $ ctan validate
-  $ ctan upload --announcement-file NEWS.txt`,
+Package metadata lives in ctan.toml (create it with "ctango init");
+"ctango upload" sends the archive and the metadata to CTAN.`,
+		Example: `  $ ctango init
+  $ ctango validate
+  $ ctango upload --announcement-file NEWS.txt`,
 		Version:       f.Version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -59,7 +59,7 @@ Package metadata lives in ctan.toml (create it with "ctan init");
 	root.SetIn(f.IO.In)
 	root.SetOut(f.IO.Out)
 	root.SetErr(f.IO.ErrOut)
-	root.SetVersionTemplate("ctan version {{.Version}}\n")
+	root.SetVersionTemplate("ctango version {{.Version}}\n")
 
 	root.AddCommand(
 		newInitCmd(f),
@@ -80,7 +80,7 @@ func Execute(f *Factory, args []string) int {
 		if errors.As(err, &exit) {
 			return exit.Code
 		}
-		fmt.Fprintf(f.IO.ErrOut, "ctan: %v\n", err)
+		fmt.Fprintf(f.IO.ErrOut, "ctango: %v\n", err)
 		return 1
 	}
 	return 0

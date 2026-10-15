@@ -121,7 +121,7 @@ func Find(dir string) (string, error) {
 		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", fmt.Errorf("%s not found (run `ctan init` to create one)", FileName)
+			return "", fmt.Errorf("%s not found (run `ctango init` to create one)", FileName)
 		}
 		dir = parent
 	}
@@ -210,7 +210,7 @@ func ExtractVersion(file, pattern string) (string, error) {
 	return "", fmt.Errorf("version: no match in %s", file)
 }
 
-// User is the per-user configuration, ~/.config/ctan/config.toml:
+// User is the per-user configuration, ~/.config/ctango/config.toml:
 //
 //	[user]
 //	name  = "Jane Doe"
@@ -224,20 +224,20 @@ type userFile struct {
 	User User `toml:"user"`
 }
 
-// UserConfigPath returns $CTAN_CONFIG, $XDG_CONFIG_HOME/ctan/config.toml or
-// ~/.config/ctan/config.toml.
+// UserConfigPath returns $CTANGO_CONFIG, $XDG_CONFIG_HOME/ctango/config.toml or
+// ~/.config/ctango/config.toml.
 func UserConfigPath() string {
-	if p := os.Getenv("CTAN_CONFIG"); p != "" {
+	if p := os.Getenv("CTANGO_CONFIG"); p != "" {
 		return p
 	}
 	if x := os.Getenv("XDG_CONFIG_HOME"); x != "" {
-		return filepath.Join(x, "ctan", "config.toml")
+		return filepath.Join(x, "ctango", "config.toml")
 	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".config", "ctan", "config.toml")
+	return filepath.Join(home, ".config", "ctango", "config.toml")
 }
 
 // LoadUser reads the per-user configuration. A missing file is not an error.

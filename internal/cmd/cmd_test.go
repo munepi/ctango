@@ -91,11 +91,11 @@ func setup(t *testing.T) *testEnv {
 	fake := &fakeCTAN{validate: `[["INFO","ok"]]`}
 	srv := httptest.NewServer(fake)
 	t.Cleanup(srv.Close)
-	t.Setenv("CTAN_SUBMIT_URL", srv.URL+"/submit")
-	t.Setenv("CTAN_API_URL", srv.URL+"/json")
-	t.Setenv("CTAN_CONFIG", filepath.Join(t.TempDir(), "none.toml"))
-	t.Setenv("CTAN_UPLOADER", "Jane Doe")
-	t.Setenv("CTAN_EMAIL", "jane@example.org")
+	t.Setenv("CTANGO_SUBMIT_URL", srv.URL+"/submit")
+	t.Setenv("CTANGO_API_URL", srv.URL+"/json")
+	t.Setenv("CTANGO_CONFIG", filepath.Join(t.TempDir(), "none.toml"))
+	t.Setenv("CTANGO_UPLOADER", "Jane Doe")
+	t.Setenv("CTANGO_EMAIL", "jane@example.org")
 
 	dir := t.TempDir()
 	mustWrite(t, filepath.Join(dir, "foo.sty"), "\\ProvidesExplPackage {foo} {2026-10-09} {1.1} {Foo}\n")

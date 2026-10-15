@@ -68,9 +68,9 @@ ctan.toml; flags override it.
 
 Without --announcement or --announcement-file, an editor is opened
 for the announcement text (leave it empty for no announcement).`,
-		Example: `  $ ctan upload
-  $ ctan upload dist/foo.zip --version 1.2 -A NEWS.txt
-  $ ctan upload --dry-run`,
+		Example: `  $ ctango upload
+  $ ctango upload dist/foo.zip --version 1.2 -A NEWS.txt
+  $ ctango upload --dry-run`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error { return runSubmit(cmd, f, o, args) },
 	}
@@ -89,8 +89,8 @@ func addSubmitFlags(cmd *cobra.Command, o *submitOptions) {
 	fl.StringVarP(&o.announcementFile, "announcement-file", "A", "", "Read the announcement from a file (\"-\" for standard input)")
 	fl.StringVar(&o.note, "note", "", "Private note to the CTAN upload managers")
 	fl.StringVar(&o.noteFile, "note-file", "", "Read the note from a file (\"-\" for standard input)")
-	fl.StringVar(&o.uploader, "uploader", "", "Name of the uploader (default: $CTAN_UPLOADER, ctan.toml, user config, git)")
-	fl.StringVar(&o.email, "email", "", "Email of the uploader (default: $CTAN_EMAIL, ctan.toml, user config, git)")
+	fl.StringVar(&o.uploader, "uploader", "", "Name of the uploader (default: $CTANGO_UPLOADER, ctan.toml, user config, git)")
+	fl.StringVar(&o.email, "email", "", "Email of the uploader (default: $CTANGO_EMAIL, ctan.toml, user config, git)")
 	fl.BoolVarP(&o.dryRun, "dry-run", "n", false, "Show what would be sent without contacting the submission service")
 	fl.BoolVar(&o.jsonOut, "json", false, "Print the server response (or, with --dry-run, the fields) as JSON")
 	fl.BoolVar(&o.skipChecks, "skip-checks", false, "Skip the local checks of fields and archive")
@@ -158,7 +158,7 @@ func runSubmit(cmd *cobra.Command, f *Factory, o *submitOptions, args []string) 
 			t.Failure("Validation failed")
 			return errFailed
 		}
-		t.Success("Validation passed; the submission can be uploaded with \"ctan upload\"")
+		t.Success("Validation passed; the submission can be uploaded with \"ctango upload\"")
 		return nil
 	}
 
@@ -292,12 +292,12 @@ func (o *submitOptions) build(cmd *cobra.Command, f *Factory, args []string) (*s
 		return nil, err
 	}
 	var git config.User
-	if first(o.uploader, os.Getenv("CTAN_UPLOADER"), p.Uploader, user.Name) == "" ||
-		first(o.email, os.Getenv("CTAN_EMAIL"), p.Email, user.Email) == "" {
+	if first(o.uploader, os.Getenv("CTANGO_UPLOADER"), p.Uploader, user.Name) == "" ||
+		first(o.email, os.Getenv("CTANGO_EMAIL"), p.Email, user.Email) == "" {
 		git = config.GitUser(p.Dir)
 	}
-	s.Uploader = first(o.uploader, os.Getenv("CTAN_UPLOADER"), p.Uploader, user.Name, git.Name)
-	s.Email = first(o.email, os.Getenv("CTAN_EMAIL"), p.Email, user.Email, git.Email)
+	s.Uploader = first(o.uploader, os.Getenv("CTANGO_UPLOADER"), p.Uploader, user.Name, git.Name)
+	s.Email = first(o.email, os.Getenv("CTANGO_EMAIL"), p.Email, user.Email, git.Email)
 
 	// Note.
 	if flags.Changed("note") {

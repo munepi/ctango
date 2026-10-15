@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// DefaultBaseURL can be overridden with the CTAN_API_URL environment variable.
+// DefaultBaseURL can be overridden with the CTANGO_API_URL environment variable.
 const DefaultBaseURL = "https://ctan.org/json/2.0"
 
 // ErrNotFound is returned when the package or author does not exist.
@@ -137,7 +137,7 @@ type Client struct {
 
 // NewClient returns a client for the CTAN JSON API.
 func NewClient(userAgent string) *Client {
-	base := os.Getenv("CTAN_API_URL")
+	base := os.Getenv("CTANGO_API_URL")
 	if base == "" {
 		base = DefaultBaseURL
 	}

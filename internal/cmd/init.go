@@ -92,7 +92,7 @@ func runInit(cmd *cobra.Command, f *Factory, o *initOptions, args []string) erro
 	if err := os.WriteFile(o.output, []byte(content), 0o644); err != nil {
 		return err
 	}
-	t.Success("Wrote %s; review it, then run \"ctan validate\"", o.output)
+	t.Success("Wrote %s; review it, then run \"ctango validate\"", o.output)
 	return nil
 }
 
@@ -138,9 +138,9 @@ func renderInit(name string, pkg *ctanapi.Package, authors []string, versionFile
 		fmt.Fprintf(&b, "%-11s = [%s]\n", key, strings.Join(quoted, ", "))
 	}
 
-	b.WriteString("# ctan.toml -- metadata for \"ctan upload\".\n")
+	b.WriteString("# ctan.toml -- metadata for \"ctango upload\".\n")
 	b.WriteString("# Keys follow the CTAN submission API: https://ctan.org/help/submit\n")
-	b.WriteString("# uploader/email are taken from ~/.config/ctan/config.toml or git config.\n\n")
+	b.WriteString("# uploader/email are taken from ~/.config/ctango/config.toml or git config.\n\n")
 
 	var summary, description, path string
 	var licenses, topics, home, bugs, support, repo, devel []string

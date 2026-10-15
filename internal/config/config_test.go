@@ -119,12 +119,12 @@ func mustEval(t *testing.T, p string) string {
 
 func TestLoadUser(t *testing.T) {
 	path := write(t, t.TempDir(), "config.toml", "[user]\nname = \"Jane\"\nemail = \"jane@example.org\"\n")
-	t.Setenv("CTAN_CONFIG", path)
+	t.Setenv("CTANGO_CONFIG", path)
 	u, err := LoadUser()
 	if err != nil || u.Name != "Jane" || u.Email != "jane@example.org" {
 		t.Errorf("LoadUser = %+v, %v", u, err)
 	}
-	t.Setenv("CTAN_CONFIG", filepath.Join(t.TempDir(), "missing.toml"))
+	t.Setenv("CTANGO_CONFIG", filepath.Join(t.TempDir(), "missing.toml"))
 	if u, err := LoadUser(); err != nil || u != (User{}) {
 		t.Errorf("missing file: %+v, %v", u, err)
 	}

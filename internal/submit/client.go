@@ -15,7 +15,7 @@ import (
 )
 
 // DefaultBaseURL is the CTAN submission endpoint. It can be overridden with
-// the CTAN_SUBMIT_URL environment variable, e.g. to point at a test server.
+// the CTANGO_SUBMIT_URL environment variable, e.g. to point at a test server.
 const DefaultBaseURL = "https://www.ctan.org/submit"
 
 // Severity levels used by the API.
@@ -92,7 +92,7 @@ type Client struct {
 
 // NewClient returns a client for the CTAN submission API.
 func NewClient(userAgent string) *Client {
-	base := os.Getenv("CTAN_SUBMIT_URL")
+	base := os.Getenv("CTANGO_SUBMIT_URL")
 	if base == "" {
 		base = DefaultBaseURL
 	}
