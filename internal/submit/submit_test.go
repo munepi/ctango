@@ -3,12 +3,14 @@ package submit
 import (
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -158,5 +160,45 @@ func TestClientErrors(t *testing.T) {
 	c.BaseURL = srv.URL + "/bogus"
 	if _, err := c.Validate(context.Background(), s); err == nil || !strings.Contains(err.Error(), "HTTP 404") {
 		t.Errorf("404: err = %v", err)
+	}
+}
+
+// Each submission must go over a new connection: reusing the one kept
+// alive from validate made the first real upload fail with a bare EOF.
+func TestClientFreshConnection(t *testing.T) {
+	s := sample(t)
+	var mu sync.Mutex
+	newConns := 0
+	var closeFlags []bool
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		closeFlags = append(closeFlags, r.Close)
+		mu.Unlock()
+		w.Write([]byte(`[]`))
+	}))
+	srv.Config.ConnState = func(_ net.Conn, st http.ConnState) {
+		if st == http.StateNew {
+			mu.Lock()
+			newConns++
+			mu.Unlock()
+		}
+	}
+	srv.Start()
+	defer srv.Close()
+
+	c := &Client{BaseURL: srv.URL, HTTP: srv.Client()}
+	if _, err := c.Validate(context.Background(), s); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Upload(context.Background(), s); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if newConns != 2 {
+		t.Errorf("new connections = %d, want 2", newConns)
+	}
+	if !reflect.DeepEqual(closeFlags, []bool{true, true}) {
+		t.Errorf("Connection: close = %v, want [true true]", closeFlags)
 	}
 }

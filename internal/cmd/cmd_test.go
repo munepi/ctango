@@ -23,6 +23,8 @@ type fakeCTAN struct {
 	validate  string // response body of /submit/validate
 	ctanPkgV  string // version of "foo" on CTAN; "" = not found
 	uploadErr bool
+	// uploadDrop closes the connection without answering /submit/upload.
+	uploadDrop bool
 }
 
 func (c *fakeCTAN) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +46,13 @@ func (c *fakeCTAN) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusConflict)
 			}
 			w.Write([]byte(c.validate))
+			return
+		}
+		if c.uploadDrop {
+			conn, _, err := w.(http.Hijacker).Hijack()
+			if err == nil {
+				conn.Close()
+			}
 			return
 		}
 		if c.uploadErr {
@@ -283,5 +292,16 @@ func TestInit(t *testing.T) {
 	// Refuses to overwrite.
 	if code := e.run(t, "", "init", "foo"); code == 0 {
 		t.Error("expected refusal to overwrite")
+	}
+}
+
+func TestUploadNoResponse(t *testing.T) {
+	e := setup(t)
+	e.ctan.uploadDrop = true
+	if code := e.run(t, "", "upload", "--yes", "-a", ""); code != 1 {
+		t.Fatalf("exit %d", code)
+	}
+	if !strings.Contains(e.stderr.String(), "may or may not have reached CTAN") {
+		t.Errorf("stderr:\n%s", e.stderr)
 	}
 }

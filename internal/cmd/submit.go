@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -192,7 +193,15 @@ func runSubmit(cmd *cobra.Command, f *Factory, o *submitOptions, args []string) 
 
 	res, err = client.Upload(ctx, s)
 	if err != nil {
-		return err
+		var uerr *url.Error
+		if !errors.As(err, &uerr) {
+			return err
+		}
+		// The request may have been sent before the connection broke, and
+		// CTAN sends no automatic receipt; only the CTAN team can tell.
+		t.Failure("No response from CTAN: %v", err)
+		fmt.Fprintln(t.ErrOut, "The upload may or may not have reached CTAN. Wait for mail from the CTAN team before uploading again.")
+		return errFailed
 	}
 	t.PrintMessages(res.Messages)
 	if o.jsonOut {

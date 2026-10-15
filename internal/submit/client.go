@@ -151,6 +151,13 @@ func (c *Client) post(ctx context.Context, action string, s *Submission) (*Resul
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Accept", "application/json")
 
+	// Never send a submission over a kept-alive connection: upload follows
+	// validate after the confirmation prompt, by which time the server may
+	// have closed the idle connection, and a POST on it fails with a bare
+	// EOF that leaves it unknown whether the upload arrived.
+	c.HTTP.CloseIdleConnections()
+	req.Close = true
+
 	raw, status, err := c.do(req)
 	if err != nil {
 		return nil, err
