@@ -160,7 +160,8 @@ func (p *Project) Resolve(name string) string {
 	return filepath.Join(p.Dir, name)
 }
 
-// ResolveVersion returns the literal version or extracts it from a file.
+// ResolveVersion returns the literal version, or the version (with its
+// date, as CTAN asks for) extracted from a file.
 func (p *Project) ResolveVersion() (string, error) {
 	if p.Version.Value != "" {
 		return p.Version.Value, nil
@@ -168,23 +169,57 @@ func (p *Project) ResolveVersion() (string, error) {
 	if p.Version.File == "" {
 		return "", nil
 	}
-	return ExtractVersion(p.Resolve(p.Version.File), p.Version.Pattern)
+	v, err := ExtractVersion(p.Resolve(p.Version.File), p.Version.Pattern)
+	if err != nil {
+		return "", err
+	}
+	return v.String(), nil
+}
+
+// Version is a version number with an optional release date.
+type Version struct {
+	Number string
+	Date   string // YYYY-MM-DD, or empty
+}
+
+// String returns the value for the version field of an upload, e.g.
+// "1.8 2026-10-09". The CTAN team asks for the date to be included.
+func (v Version) String() string {
+	if v.Date == "" {
+		return v.Number
+	}
+	return v.Number + " " + v.Date
 }
 
 // DefaultVersionPatterns match the usual LaTeX identification commands.
+// The named groups "version" and "date" pick up the two parts.
 var DefaultVersionPatterns = []string{
-	// \ProvidesExplPackage {name} {date} {1.8} {description}
-	`\\ProvidesExpl(?:Package|Class|File)\s*\{[^}]*\}\s*\{[^}]*\}\s*\{\s*v?([^}\s]+)\s*\}`,
+	// \ProvidesExplPackage {name} {2026-10-09} {1.8} {description}
+	`\\ProvidesExpl(?:Package|Class|File)\s*\{[^}]*\}\s*\{\s*(?P<date>[^}\s]*)\s*\}\s*\{\s*v?(?P<version>[^}\s]+)\s*\}`,
 	// \ProvidesPackage{name}[2026/10/09 v1.8 description]
-	`\\Provides(?:Package|Class|File)\s*\{[^}]*\}\s*\[\s*\S+\s+v?([^\s\]]+)`,
+	`\\Provides(?:Package|Class|File)\s*\{[^}]*\}\s*\[\s*(?P<date>\S+)\s+v?(?P<version>[^\s\]]+)`,
 }
 
-// ExtractVersion returns the first capture group (or the whole match) of
-// pattern in file. With an empty pattern, DefaultVersionPatterns are tried.
-func ExtractVersion(file, pattern string) (string, error) {
+var dateRe = regexp.MustCompile(`^(\d{4})[-/](\d{2})[-/](\d{2})$`)
+
+// normalizeDate turns 2026/10/09 into 2026-10-09 and drops anything that
+// is not a date.
+func normalizeDate(s string) string {
+	m := dateRe.FindStringSubmatch(strings.TrimSpace(s))
+	if m == nil {
+		return ""
+	}
+	return m[1] + "-" + m[2] + "-" + m[3]
+}
+
+// ExtractVersion finds pattern in file. The version is taken from the
+// named group "version", else the first group, else the whole match; the
+// date from the named group "date", if any. With an empty pattern,
+// DefaultVersionPatterns are tried.
+func ExtractVersion(file, pattern string) (Version, error) {
 	b, err := os.ReadFile(file)
 	if err != nil {
-		return "", fmt.Errorf("version: %w", err)
+		return Version{}, fmt.Errorf("version: %w", err)
 	}
 	patterns := DefaultVersionPatterns
 	if pattern != "" {
@@ -193,21 +228,28 @@ func ExtractVersion(file, pattern string) (string, error) {
 	for _, pat := range patterns {
 		re, err := regexp.Compile(pat)
 		if err != nil {
-			return "", fmt.Errorf("version.pattern: %w", err)
+			return Version{}, fmt.Errorf("version.pattern: %w", err)
 		}
 		m := re.FindSubmatch(b)
 		if m == nil {
 			continue
 		}
-		v := m[0]
-		if len(m) > 1 {
-			v = m[1]
+		var v Version
+		number := m[0]
+		if i := re.SubexpIndex("version"); i >= 0 {
+			number = m[i]
+		} else if len(m) > 1 {
+			number = m[1]
 		}
-		if s := strings.TrimSpace(string(v)); s != "" {
-			return s, nil
+		v.Number = strings.TrimSpace(string(number))
+		if i := re.SubexpIndex("date"); i >= 0 {
+			v.Date = normalizeDate(string(m[i]))
+		}
+		if v.Number != "" {
+			return v, nil
 		}
 	}
-	return "", fmt.Errorf("version: no match in %s", file)
+	return Version{}, fmt.Errorf("version: no match in %s", file)
 }
 
 // User is the per-user configuration, ~/.config/ctango/config.toml:

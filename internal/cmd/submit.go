@@ -121,7 +121,8 @@ func runSubmit(cmd *cobra.Command, f *Factory, o *submitOptions, args []string) 
 	// Local checks.
 	if !o.skipChecks {
 		msgs := s.Check()
-		if s.Archive != "" && submit.HasArchiveExt(s.Archive) {
+		// A missing or unsupported archive is already reported by Check.
+		if st, err := os.Stat(s.Archive); err == nil && !st.IsDir() && submit.HasArchiveExt(s.Archive) {
 			if am, err := archive.Inspect(s.Archive, s.Pkg); err != nil {
 				msgs = append(msgs, submit.Message{Severity: submit.SeverityError, Text: err.Error()})
 			} else {
@@ -356,7 +357,9 @@ func (o *submitOptions) build(cmd *cobra.Command, f *Factory, args []string) (*s
 // compareWithCTAN reports differences to what is currently on CTAN.
 func compareWithCTAN(s *submit.Submission, pkg *ctanapi.Package) []submit.Message {
 	var msgs []submit.Message
-	if v := pkg.Version.Number; v != "" && v == s.Version {
+	// The version field may carry a date ("1.8 2026-10-09"); CTAN keeps the
+	// number and the date apart.
+	if v := pkg.Version.Number; v != "" && v == versionNumber(s.Version) {
 		msgs = append(msgs, submit.Message{Severity: submit.SeverityError,
 			Text: fmt.Sprintf("version %s is already on CTAN; bump the version", v)})
 	}
@@ -365,6 +368,14 @@ func compareWithCTAN(s *submit.Submission, pkg *ctanapi.Package) []submit.Messag
 			Text: fmt.Sprintf("ctanPath %s differs from the current CTAN path %s", s.CTANPath, p)})
 	}
 	return msgs
+}
+
+// versionNumber returns the version without a trailing date.
+func versionNumber(v string) string {
+	if f := strings.Fields(v); len(f) > 0 {
+		return f[0]
+	}
+	return ""
 }
 
 func readText(stdin io.Reader, name string) (string, error) {

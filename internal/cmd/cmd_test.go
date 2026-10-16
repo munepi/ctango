@@ -161,7 +161,7 @@ func TestUploadNewPackage(t *testing.T) {
 	}
 	form := e.ctan.forms["/submit/upload"]
 	checks := map[string]string{
-		"pkg": "foo", "version": "1.1", "update": "false", "uploader": "Jane Doe",
+		"pkg": "foo", "version": "1.1 2026-10-09", "update": "false", "uploader": "Jane Doe",
 		"email": "jane@example.org", "announcement": "Hello CTAN", "author": "Jane Doe",
 	}
 	for k, v := range checks {
@@ -303,5 +303,15 @@ func TestUploadNoResponse(t *testing.T) {
 	}
 	if !strings.Contains(e.stderr.String(), "may or may not have reached CTAN") {
 		t.Errorf("stderr:\n%s", e.stderr)
+	}
+}
+
+func TestMissingArchiveReportedOnce(t *testing.T) {
+	e := setup(t)
+	if code := e.run(t, "", "validate", "--update", "true", "missing.zip"); code != 1 {
+		t.Fatalf("exit %d", code)
+	}
+	if n := strings.Count(e.stderr.String(), "ERROR"); n != 1 {
+		t.Errorf("%d errors reported, want 1:\n%s", n, e.stderr)
 	}
 }

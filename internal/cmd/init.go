@@ -183,14 +183,16 @@ func renderInit(name string, pkg *ctanapi.Package, authors []string, versionFile
 	kv("archive", archive, "built by your release process")
 	b.WriteString("\n")
 	if versionFile != "" {
-		b.WriteString("# The version is read from this file (\\ProvidesPackage / \\ProvidesExplPackage).\n")
-		b.WriteString("# Add pattern = '...' to use your own regular expression (first group = version).\n")
+		b.WriteString("# The version and its date are read from this file (\\ProvidesPackage /\n")
+		b.WriteString("# \\ProvidesExplPackage) and sent as e.g. \"1.8 2026-10-09\", as CTAN asks.\n")
+		b.WriteString("# Add pattern = '...' to use your own regular expression\n")
+		b.WriteString("# (named groups \"version\" and \"date\", or the first group as the version).\n")
 		b.WriteString("[version]\n")
 		kv("file", versionFile, "")
 	} else {
 		b.WriteString("# Either a literal version, or a [version] table with file (and pattern).\n")
-		b.WriteString("# Usually given with --version at upload time.\n")
-		b.WriteString("# version = \"1.0\"\n")
+		b.WriteString("# Usually given with --version at upload time; CTAN asks for the date too.\n")
+		b.WriteString("# version = \"1.0 2026-01-01\"\n")
 	}
 	return b.String()
 }

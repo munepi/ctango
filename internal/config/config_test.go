@@ -44,7 +44,7 @@ file = "foo.sty"
 		t.Errorf("Resolve = %s", got)
 	}
 	v, err := p.ResolveVersion()
-	if err != nil || v != "1.8" {
+	if err != nil || v != "1.8 2026-10-09" {
 		t.Errorf("ResolveVersion = %q, %v", v, err)
 	}
 
@@ -74,15 +74,18 @@ func TestLoadUnknownKey(t *testing.T) {
 func TestExtractVersion(t *testing.T) {
 	dir := t.TempDir()
 	tests := []struct{ content, pattern, want string }{
-		{"\\ProvidesExplPackage {spotxcolor} {2026-10-09} {1.8} {x}", "", "1.8"},
-		{"\\ProvidesPackage{foo}\n  [2026/10/09 v2.3a Foo]", "", "2.3a"},
-		{"\\ProvidesClass{foo}[2026/10/09 3.1 Foo]", "", "3.1"},
+		{"\\ProvidesExplPackage {spotxcolor} {2026-10-09} {1.8} {x}", "", "1.8 2026-10-09"},
+		{"\\ProvidesExplPackage{foo}{}{1.0}{x}", "", "1.0"},
+		{"\\ProvidesPackage{foo}\n  [2026/10/09 v2.3a Foo]", "", "2.3a 2026-10-09"},
+		{"\\ProvidesClass{foo}[2026/10/09 3.1 Foo]", "", "3.1 2026-10-09"},
+		{"\\ProvidesFile{foo}[today v1.2]", "", "1.2"},
 		{"\\def\\fooversion{4.5}", `\\def\\fooversion\{([^}]*)\}`, "4.5"},
+		{"\\def\\foo{4.6 (2026/01/02)}", `\\def\\foo\{(?P<version>\S+) \((?P<date>[^)]*)\)\}`, "4.6 2026-01-02"},
 	}
 	for i, tt := range tests {
 		f := write(t, dir, "f.sty", tt.content)
 		got, err := ExtractVersion(f, tt.pattern)
-		if err != nil || got != tt.want {
+		if err != nil || got.String() != tt.want {
 			t.Errorf("%d: got %q, %v; want %q", i, got, err, tt.want)
 		}
 	}

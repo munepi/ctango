@@ -40,7 +40,7 @@ go build -o ctango ./cmd/ctango
 | Flag | Description |
 |---|---|
 | `-c, --config <file>` | `ctan.toml` to use (default: search the current directory and its parents) |
-| `--version <v>` | Package version (default: from `ctan.toml`) |
+| `--version <v>` | Package version, preferably with its date, e.g. `"1.8 2026-10-09"` (default: from `ctan.toml`) |
 | `--update auto\|true\|false` | Whether the package already exists on CTAN. `auto` (default) asks the CTAN JSON API. |
 | `-a, --announcement <text>` | Announcement for the ctan-ann mailing list. `-a ""` means no announcement. |
 | `-A, --announcement-file <file>` | Read the announcement from a file (`-` for standard input) |
@@ -85,13 +85,13 @@ archive     = "spotxcolor.zip"     # relative to ctan.toml
 
 [version]
 file = "spotxcolor.sty"
-# pattern = '...'   # optional regular expression; the first group is the version
+# pattern = '...'   # optional regular expression with named groups "version" and "date"
 ```
 
 | Key | API field | Notes |
 |---|---|---|
 | `pkg` | `pkg` | required |
-| `version` | `version` | a string, or a `[version]` table with `file` and optional `pattern`. Without a pattern, `\ProvidesExplPackage{..}{..}{1.8}` and `\ProvidesPackage{..}[date v1.8 ..]` (also `Class`/`File`) are recognized. |
+| `version` | `version` | a string such as `"1.8 2026-10-09"`, or a `[version]` table with `file` and optional `pattern` (see below) |
 | `author` | `author` | required; several authors are joined with `; ` |
 | `ctanPath` | `ctanPath` | required; path below `/tex-archive` |
 | `summary` | `summary` | required; one line, ≤ 128 characters |
@@ -103,6 +103,31 @@ file = "spotxcolor.sty"
 | `archive` | `file` | `.zip`, `.tgz` or `.tar.gz`; overridden by the command argument |
 
 Unknown keys are errors, so typos do not silently drop a value.
+
+### Version and date
+
+The CTAN team asks for the release date in the version field of an
+upload, e.g. `1.8 2026-10-09`. With a `[version]` table, `ctango` reads
+both from the file and sends them in this form; dates like `2026/10/09`
+are written as `2026-10-09`. Without a `pattern`, these are recognized
+(also with `Class` or `File` instead of `Package`):
+
+```latex
+\ProvidesExplPackage {foo} {2026-10-09} {1.8} {...}
+\ProvidesPackage{foo}[2026/10/09 v1.8 ...]
+```
+
+A custom `pattern` takes the version from the named group `version` (or
+the first group) and the date from the named group `date`, if any:
+
+```toml
+[version]
+file    = "foo.dtx"
+pattern = '\\def\\fooversion\{(?P<version>[^}]*)\}\s*\\def\\foodate\{(?P<date>[^}]*)\}'
+```
+
+A literal `version` (in `ctan.toml` or with `--version`) is sent as is,
+so include the date there yourself.
 
 ### Uploader and email
 
@@ -170,7 +195,7 @@ a day. They differ as follows.
 | Archive | the zip made by `l3build ctan` | any `.zip`, `.tgz` or `.tar.gz`, however it was built |
 | Installation | part of TeX Live | a separate Go binary |
 | Transport | runs `curl` | built in; no external programs |
-| Version | argument of `l3build upload` or `uploadconfig.version` | `--version`, or read from `\ProvidesExplPackage` / `\ProvidesPackage` |
+| Version | argument of `l3build upload` or `uploadconfig.version` | `--version`, or read with its date from `\ProvidesExplPackage` / `\ProvidesPackage` |
 | New package or update | sent as an update; if CTAN reports a non-existent package, validated again as new | looked up in the CTAN JSON API before sending |
 | Same version as on CTAN | not checked | refused (CTAN's validation does not catch this) |
 | Missing mandatory fields | asked for interactively | reported as errors (only the announcement is edited interactively) |
